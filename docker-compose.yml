@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+    deploy:
+      resources:
+        limits:
+          cpus: ${DB_CPUS}
+          memory: ${DB_MEM}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: ./app
+    environment:
+      - DB_HOST=db
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DATASET_SIZE=${DATASET_SIZE}
+      - USE_INDEX=${USE_INDEX}
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: ${APP_CPUS}
+          memory: ${APP_MEM}
+
+  loadtester:
+    build: ./loadtester
+    environment:
+      - TARGET_URL=${TARGET_URL}
+      - DURATION=${DURATION}
+      - CONCURRENCY=${CONCURRENCY}
+      - READ_RATIO=${READ_RATIO}
+      - WRITE_RATIO=${WRITE_RATIO}
+      - DATASET_SIZE=${DATASET_SIZE}
+    depends_on:
+      - app
+    command: ["python", "loadtest.py"]
+
+volumes:
+  pgdata:
