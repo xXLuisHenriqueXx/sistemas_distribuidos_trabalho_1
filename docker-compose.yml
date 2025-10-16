@@ -15,10 +15,19 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
   app:
     build: ./app
     environment:
+      - DB_TYPE=${DB_TYPE}
       - DB_HOST=db
+      - MONGO_HOST=mongo
       - DB_USER=${POSTGRES_USER}
       - DB_PASS=${POSTGRES_PASSWORD}
       - DB_NAME=${POSTGRES_DB}
@@ -26,6 +35,7 @@ services:
       - USE_INDEX=${USE_INDEX}
     depends_on:
       - db
+      - mongo
     ports:
       - "3000:3000"
     deploy:
@@ -43,9 +53,14 @@ services:
       - READ_RATIO=${READ_RATIO}
       - WRITE_RATIO=${WRITE_RATIO}
       - DATASET_SIZE=${DATASET_SIZE}
+      - MONITOR_TARGET=${MONITOR_TARGET}
+      - REPORT_INTERVAL=${REPORT_INTERVAL}
     depends_on:
       - app
-    command: ["python", "loadtest.py"]
+    command: ["/bin/sh", "-c", "sleep 10 && python loadtest.py"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   pgdata:
+  mongodata:

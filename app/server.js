@@ -1,26 +1,44 @@
 import express from "express";
-import pkg from "pg";
+import dotenv from "dotenv";
 import { seedDatabase } from "./seed.js";
+import {
+  createPostgresConnection,
+  insertPost as insertPg,
+  getPostById as getPgById,
+} from "./db/postgres.js";
+import {
+  createMongoConnection,
+  insertPost as insertMg,
+  getPostById as getMgById,
+} from "./db/mongo.js";
 
-const { Pool } = pkg;
+dotenv.config();
+
 const app = express();
 app.use(express.json());
 
-const pool = new Pool({
-  host: process.env.DB_HOST || "db",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASS || "postgres",
-  database: process.env.DB_NAME || "testdb",
-});
+let dbClient = null;
 
-// 🔹 Reseed automático no startup
+const dbType = process.env.DB_TYPE || "postgres";
+
 (async () => {
-  console.log("⚙️ Reseeding database on startup...");
+  console.log("⚙️ Starting up...");
+
   try {
-    await seedDatabase(pool);
-    console.log("✅ Database reseeded successfully!");
+    if (dbType === "postgres") {
+      dbClient = await createPostgresConnection();
+    } else {
+      dbClient = await createMongoConnection();
+    }
+
+    await seedDatabase(dbClient, dbType);
+
+    console.log("✅ Database ready, starting server...");
+
+    const port = 3000;
+    app.listen(port, () => console.log(`🚀 App running on port ${port}`));
   } catch (err) {
-    console.error("❌ Error reseeding database:", err);
+    console.error("❌ Startup error:", err);
     process.exit(1);
   }
 })();
@@ -28,9 +46,13 @@ const pool = new Pool({
 app.get("/posts/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query("SELECT * FROM posts WHERE id=$1", [id]);
-    if (result.rows.length === 0) return res.status(404).send("Not found");
-    res.json(result.rows[0]);
+    const result =
+      dbType === "postgres"
+        ? await getPgById(dbClient, id)
+        : await getMgById(dbClient, id);
+
+    if (!result) return res.status(404).send("Not found");
+    res.json(result);
   } catch (err) {
     console.error(err);
     res.status(500).send("Error fetching post");
@@ -40,16 +62,13 @@ app.get("/posts/:id", async (req, res) => {
 app.post("/posts", async (req, res) => {
   try {
     const { user_id, title, content } = req.body;
-    const result = await pool.query(
-      "INSERT INTO posts (user_id, title, content) VALUES ($1, $2, $3) RETURNING id",
-      [user_id, title, content]
-    );
-    res.status(201).json({ id: result.rows[0].id });
+    const result =
+      dbType === "postgres"
+        ? await insertPg(dbClient, { user_id, title, content })
+        : await insertMg(dbClient, { user_id, title, content });
+    res.status(201).json({ id: result.id || result._id });
   } catch (err) {
     console.error(err);
     res.status(500).send("Error inserting post");
   }
 });
-
-const port = 3000;
-app.listen(port, () => console.log(`🚀 App running on port ${port}`));
