@@ -79,6 +79,7 @@ export async function seedDatabase(client, dbType) {
     const docs = [];
     for (let i = 0; i < DATASET_SIZE; i++) {
       docs.push({
+        post_id: i + 1,
         user_id: Math.floor(Math.random() * 1000) + 1,
         title: faker.lorem.sentence(),
         content: faker.lorem.paragraphs(2),
@@ -96,6 +97,7 @@ export async function seedDatabase(client, dbType) {
 
     if (USE_INDEX) {
       console.log("🧱 Criando índices no Mongo...");
+      await Post.collection.createIndex({ post_id: 1 });
       await Post.collection.createIndex({ user_id: 1 });
       await Post.collection.createIndex({ created_at: 1 });
     }

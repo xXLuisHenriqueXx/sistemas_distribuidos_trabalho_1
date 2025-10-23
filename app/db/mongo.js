@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const postSchema = new mongoose.Schema({
+  post_id: { type: Number, index: true },
   user_id: Number,
   title: String,
   content: String,
@@ -23,5 +24,10 @@ export async function insertPost(Post, { user_id, title, content }) {
 }
 
 export async function getPostById(Post, id) {
+  const numericId = parseInt(id, 10);
+  if (!isNaN(numericId)) {
+    return await Post.findOne({ post_id: numericId });
+  }
+
   return await Post.findById(id);
 }
