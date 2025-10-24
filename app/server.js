@@ -50,8 +50,7 @@ const dbType = process.env.DB_TYPE || "postgres";
   }
 })();
 
-
-app.get("/health", (req, res) => {
+app.get("/health", (_, res) => {
   if (isServerReady) {
     res.status(200).send("OK");
   } else {
@@ -59,7 +58,7 @@ app.get("/health", (req, res) => {
   }
 });
 
-app.get("/posts/all/ids", async (req, res) => {
+app.get("/posts/all/ids", async (_, res) => {
   try {
     const ids =
       dbType === "postgres"
@@ -72,15 +71,13 @@ app.get("/posts/all/ids", async (req, res) => {
   }
 });
 
-
-// Rota de leitura primária (ID) (sem alterações)
 app.get("/posts/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const result =
       dbType === "postgres"
         ? await getPgById(dbClient, id)
-        : await getMgById(dbClient, id); 
+        : await getMgById(dbClient, id);
 
     if (!result) return res.status(404).send("Not found");
     res.json(result);
@@ -90,8 +87,6 @@ app.get("/posts/:id", async (req, res) => {
   }
 });
 
-
-// Rota de escrita (sem alterações)
 app.post("/posts", async (req, res) => {
   try {
     let data, result;
@@ -102,7 +97,7 @@ app.post("/posts", async (req, res) => {
       result = await insertPg(dbClient, data);
     } else {
       const { author, title, content } = req.body;
-      data = { author, title, content, created_at: new Date() }; 
+      data = { author, title, content, created_at: new Date() };
       result = await insertMg(dbClient, data);
     }
 
@@ -112,4 +107,3 @@ app.post("/posts", async (req, res) => {
     res.status(500).send("Error inserting post");
   }
 });
-

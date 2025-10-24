@@ -12,25 +12,48 @@ export function createPostgresConnection() {
   return pool;
 }
 
-export async function insertPost(pool, { user_id, title, content }) {
+export async function insertOrder(
+  pool,
+  { user_id, status, total_value, created_at }
+) {
   const result = await pool.query(
-    "INSERT INTO posts (user_id, title, content) VALUES ($1, $2, $3) RETURNING id",
-    [user_id, title, content]
+    "INSERT INTO orders (user_id, status, total_value, created_at) VALUES ($1, $2, $3, $4) RETURNING id",
+    [user_id, status, total_value, created_at]
   );
 
   return result.rows[0];
 }
 
-export async function getPostById(pool, id) {
-  const result = await pool.query("SELECT * FROM posts WHERE id=$1", [id]);
-
+export async function getOrderById(pool, id) {
+  const result = await pool.query("SELECT * FROM orders WHERE id=$1", [id]);
   return result.rows[0];
 }
 
+export async function getOrdersByUserId(pool, uid, limit = 50) {
+  const result = await pool.query(
+    "SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2",
+    [uid, limit]
+  );
+  return result.rows;
+}
 
-// --- NOVA FUNÇÃO PARA O LOADTESTER ---
-export async function getAllPostIds(pool) {
-  // Busca todos os documentos, retornando apenas o campo id
-  const result = await pool.query("SELECT id FROM posts");
-  return result.rows; // Retorna [{id: 1}, {id: 2}, ...]
+export async function getOrdersByStatus(pool, status, limit = 50) {
+  const result = await pool.query(
+    "SELECT * FROM orders WHERE status = $1 ORDER BY created_at DESC LIMIT $2",
+    [status, limit]
+  );
+  return result.rows;
+}
+
+export async function getOrdersInRange(pool, fromTs, toTs, limit = 100) {
+  const result = await pool.query(
+    "SELECT * FROM orders WHERE created_at BETWEEN $1 AND $2 ORDER BY created_at DESC LIMIT $3",
+    [fromTs, toTs, limit]
+  );
+  return result.rows;
+}
+
+export async function getAllOrderIds(pool) {
+  const result = await pool.query("SELECT id FROM orders");
+  return result.rows;
 }
