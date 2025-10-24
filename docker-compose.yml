@@ -5,11 +5,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
-    deploy:
-      resources:
-        limits:
-          cpus: ${DB_CPUS}
-          memory: ${DB_MEM}
     ports:
       - "5432:5432"
     volumes:
@@ -51,16 +46,22 @@ services:
       - DURATION=${DURATION}
       - CONCURRENCY=${CONCURRENCY}
       - READ_RATIO=${READ_RATIO}
-      - WRITE_RATIO=${WRITE_RATIO}
+      - SECONDARY_READ_RATIO=${SECONDARY_READ_RATIO}
       - DATASET_SIZE=${DATASET_SIZE}
       - MONITOR_TARGET=${MONITOR_TARGET}
       - REPORT_INTERVAL=${REPORT_INTERVAL}
+      - DB_TYPE=${DB_TYPE}
+      - USE_INDEX=${USE_INDEX}
+      - APP_CPUS=${APP_CPUS}
+      - APP_MEM=${APP_MEM}
+      - ENABLE_SECONDARY_READS=${ENABLE_SECONDARY_READS}
+
     depends_on:
       - app
-    command: ["/bin/sh", "-c", "sleep 10 && python loadtest.py"]
+    command: ["/bin/sh", "-c", "sleep 30 && python loadtest.py"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-
+      - ./loadtester:/app
 volumes:
   pgdata:
   mongodata:

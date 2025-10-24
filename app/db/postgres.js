@@ -26,3 +26,19 @@ export async function getPostById(pool, id) {
 
   return result.rows[0];
 }
+
+export async function getPostsByUserId(pool, uid) {
+  const result = await pool.query(
+    "SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50",
+    [uid]
+  );
+
+  return result.rows;
+}
+
+// --- NOVA FUNÇÃO PARA O LOADTESTER ---
+export async function getAllPostIds(pool) {
+  // Busca todos os documentos, retornando apenas o campo id
+  const result = await pool.query("SELECT id FROM posts");
+  return result.rows; // Retorna [{id: 1}, {id: 2}, ...]
+}

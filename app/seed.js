@@ -12,6 +12,7 @@ export async function seedDatabase(client, dbType) {
   console.log(`🏗 Índices: ${USE_INDEX ? "ativados" : "desativados"}`);
 
   if (dbType === "postgres") {
+    // --- Lógica do Postgres (Sem alterações) ---
     await client.query(`
       DROP TABLE IF EXISTS posts;
       CREATE TABLE posts (
@@ -24,7 +25,7 @@ export async function seedDatabase(client, dbType) {
     `);
 
     const BATCH_SIZE = 1000;
-    console.log("🌱 Inserindo registros...");
+    console.log("🌱 Inserindo registros (Postgres)...");
     const totalBatches = Math.ceil(DATASET_SIZE / BATCH_SIZE);
 
     for (let b = 0; b < totalBatches; b++) {
@@ -59,7 +60,7 @@ export async function seedDatabase(client, dbType) {
     }
 
     if (USE_INDEX) {
-      console.log("🧱 Criando índices...");
+      console.log("🧱 Criando índices (Postgres)...");
       await client.query(
         "CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id)"
       );
@@ -70,17 +71,22 @@ export async function seedDatabase(client, dbType) {
 
     console.log("✅ Seeding Postgres concluído!");
   } else if (dbType === "mongo") {
+    // --- Lógica do Mongo (Modificada) ---
     const Post = client;
 
-    console.log("🧹 Limpando coleção...");
+    console.log("🧹 Limpando coleção (Mongo)...");
     await Post.deleteMany({});
 
-    console.log("🌱 Inserindo documentos...");
+    console.log("🌱 Inserindo documentos (Mongo)...");
     const docs = [];
     for (let i = 0; i < DATASET_SIZE; i++) {
       docs.push({
-        post_id: i + 1,
-        user_id: Math.floor(Math.random() * 1000) + 1,
+        // post_id foi removido, usaremos o _id nativo
+        author: {
+          user_id: Math.floor(Math.random() * 1000) + 1,
+          username: faker.internet.userName(),
+          email: faker.internet.email(),
+        },
         title: faker.lorem.sentence(),
         content: faker.lorem.paragraphs(2),
         created_at: new Date(),
@@ -89,16 +95,16 @@ export async function seedDatabase(client, dbType) {
       if (docs.length >= 1000) {
         await Post.insertMany(docs);
         docs.length = 0;
-        if (i % 5000 === 0 && i > 0) console.log(`${i} inseridos...`);
+        if ((i + 1) % 10000 === 0) console.log(`${i + 1} inseridos...`);
       }
     }
 
     if (docs.length > 0) await Post.insertMany(docs);
 
     if (USE_INDEX) {
-      console.log("🧱 Criando índices no Mongo...");
-      await Post.collection.createIndex({ post_id: 1 });
-      await Post.collection.createIndex({ user_id: 1 });
+      console.log("🧱 Criando índices (Mongo)...");
+      // Índice modificado para o campo aninhado
+      await Post.collection.createIndex({ "author.user_id": 1 });
       await Post.collection.createIndex({ created_at: 1 });
     }
 
