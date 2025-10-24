@@ -426,3 +426,88 @@ Para cada par de teste (ou seja, mongo e postgres), comentar o que foi observado
 
 ---
 
+## 🧪 Test Run: 2025-10-24 17:53:21
+
+### ⚙️ Configuration
+| Parameter | Value |
+| :--- | :--- |
+| **DB_TYPE** | mongo |
+| **USE_INDEX** | true |
+| **ENABLE_SECONDARY_READS** | True |
+| **DATASET_SIZE** | 20000 |
+| **CONCURRENCY** | 100 |
+| **DURATION_S** | 60 |
+| **LOAD_MIX** | 50% Read_ID, 10% Read_User, 40% Write |
+| **MONITOR_TARGET** | app |
+| **APP_CPUS** | 0.5 |
+| **APP_MEM** | 1g |
+
+### 📊 Performance Results (Final)
+**Total Requests:** 11497 | **Total Errors:** 1171 | **Req/Sec:** 184.77
+
+| Operation | Requests | Errors | Avg Lat (ms) | p95 (ms) | p99 (ms) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Read (Primary)** | 6371 | 0 | 469.78 | 1271.94 | 1432.49 |
+| **Read (Secondary)** | 0 | 1171 | 0.00 | 0.00 | 0.00 |
+| **Write** | 5126 | 0 | 501.59 | 1287.93 | 1458.96 |
+
+### 💻 Resource Usage (app - Final)
+| Resource | Avg | Max |
+| :--- | :--- | :--- |
+| **CPU (%)** | 33.58 | 39.18 |
+| **Memory (MB)** | 166.20 | 176.52 |
+| **Net TX (MB)** | - | 22.40 |
+| **Net RX (MB)** | - | 8.77 |
+
+### 📈 Periodic Report Log
+| Time (s) | New Reqs | Read Avg (ms) | Sec.Read Avg (ms) | Write Avg (ms) | CPU Avg (%) | Mem Avg (MB) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 16 | 2266 | 577.11 | 0.00 | 654.77 | 33.88 | 168.37 |
+| 31 | 3031 | 516.57 | 0.00 | 552.48 | 34.41 | 166.77 |
+| 46 | 3083 | 489.05 | 0.00 | 519.38 | 33.66 | 166.30 |
+| 61 | 3117 | 469.78 | 0.00 | 501.59 | 33.58 | 166.20 |
+
+---
+
+## 🧪 Test Run: 2025-10-24 17:55:15
+
+### ⚙️ Configuration
+| Parameter | Value |
+| :--- | :--- |
+| **DB_TYPE** | postgres |
+| **USE_INDEX** | true |
+| **ENABLE_SECONDARY_READS** | True |
+| **DATASET_SIZE** | 20000 |
+| **CONCURRENCY** | 100 |
+| **DURATION_S** | 60 |
+| **LOAD_MIX** | 50% Read_ID, 10% Read_User, 40% Write |
+| **MONITOR_TARGET** | app |
+| **APP_CPUS** | 0.5 |
+| **APP_MEM** | 1g |
+
+### 📊 Performance Results (Final)
+**Total Requests:** 30178 | **Total Errors:** 3418 | **Req/Sec:** 494.41
+
+| Operation | Requests | Errors | Avg Lat (ms) | p95 (ms) | p99 (ms) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Read (Primary)** | 16840 | 0 | 187.25 | 1066.70 | 1137.21 |
+| **Read (Secondary)** | 0 | 3418 | 0.00 | 0.00 | 0.00 |
+| **Write** | 13338 | 0 | 189.52 | 1067.76 | 1134.41 |
+
+### 💻 Resource Usage (app - Final)
+| Resource | Avg | Max |
+| :--- | :--- | :--- |
+| **CPU (%)** | 28.84 | 33.73 |
+| **Memory (MB)** | 79.29 | 82.74 |
+| **Net TX (MB)** | - | 32.09 |
+| **Net RX (MB)** | - | 19.66 |
+
+### 📈 Periodic Report Log
+| Time (s) | New Reqs | Read Avg (ms) | Sec.Read Avg (ms) | Write Avg (ms) | CPU Avg (%) | Mem Avg (MB) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 16 | 6176 | 234.20 | 0.00 | 234.90 | 29.98 | 72.73 |
+| 31 | 7504 | 210.13 | 0.00 | 215.23 | 28.75 | 76.99 |
+| 46 | 9230 | 187.85 | 0.00 | 191.64 | 29.15 | 78.42 |
+
+---
+
