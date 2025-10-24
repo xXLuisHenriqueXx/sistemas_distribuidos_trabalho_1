@@ -192,10 +192,9 @@ async def main():
         for i in range(CONCURRENCY):
             task = asyncio.create_task(worker(
                 session, i, read_boundary,
-                URL, DURATION, DB_TYPE, DATASET_SIZE, start_time, # Configs
-                post_ids_lock, post_ids, # Estado compartilhado
-                read_latencies, write_latencies, # Listas de latência
-                # Passando funções lambda para incrementar erros de forma segura (alternativa a locks)
+                URL, DURATION, DB_TYPE, DATASET_SIZE, start_time,
+                post_ids_lock, post_ids,
+                read_latencies, write_latencies,
                 lambda: globals().update(errors_read=errors_read + 1),
                 lambda: globals().update(errors_write=errors_write + 1)
             ))

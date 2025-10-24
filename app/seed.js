@@ -20,7 +20,7 @@ export async function seedDatabase(client, dbType) {
         user_id INT,
         title TEXT,
         content TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP
       );
     `);
 
@@ -36,18 +36,19 @@ export async function seedDatabase(client, dbType) {
         const idx = b * BATCH_SIZE + i;
         if (idx >= DATASET_SIZE) break;
 
-        const userId = Math.floor(Math.random() * 1000) + 1;
+        const userId = Math.floor(Math.random() * DATASET_SIZE) + 1
         const title = faker.lorem.sentence();
         const content = faker.lorem.paragraphs(2);
+        const created_at = faker.date.between({ from: '2022-01-01', to: '2025-01-01' });
 
-        params.push(userId, title, content);
+        params.push(userId, title, content, created_at);
         values.push(
           `($${params.length - 2}, $${params.length - 1}, $${params.length})`
         );
       }
 
       await client.query(
-        `INSERT INTO posts (user_id, title, content) VALUES ${values.join(
+        `INSERT INTO posts (user_id, title, content, created_at) VALUES ${values.join(
           ","
         )}`,
         params
@@ -83,13 +84,13 @@ export async function seedDatabase(client, dbType) {
       docs.push({
         // post_id foi removido, usaremos o _id nativo
         author: {
-          user_id: Math.floor(Math.random() * 1000) + 1,
+          userId: Math.floor(Math.random() * DATASET_SIZE) + 1,
           username: faker.internet.userName(),
           email: faker.internet.email(),
         },
         title: faker.lorem.sentence(),
         content: faker.lorem.paragraphs(2),
-        created_at: new Date(),
+        created_at: faker.date.between({ from: '2022-01-01', to: '2025-01-01' })
       });
 
       if (docs.length >= 1000) {

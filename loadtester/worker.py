@@ -2,7 +2,9 @@ import asyncio
 import aiohttp
 import random
 import time
-import os # Necessário para generate_lorem_ipsum se LOREM_WORDS for movido para cá
+import random
+import datetime
+import time
 
 # Se LOREM_WORDS for usado apenas aqui, mova-o para cá
 LOREM_WORDS = [
@@ -26,20 +28,17 @@ async def worker(
     url: str,
     duration: int,
     db_type: str,
-    dataset_size: int, # Necessário se DB_TYPE for postgres e não usar pre-aquecimento
-    start_time: float, # Tempo de início do teste
-    post_ids_lock: asyncio.Lock, # Lock para acessar post_ids
-    post_ids: list, # Lista compartilhada de IDs
-    # Listas para adicionar latências
+    dataset_size: int,
+    start_time: float,
+    post_ids_lock: asyncio.Lock,
+    post_ids: list,
     read_latencies: list,
     write_latencies: list,
-    # Funções para incrementar erros (thread-safe se necessário, aqui usamos globais)
     increment_read_error,
     increment_write_error
 ):
     """Simula um usuário fazendo requisições."""
 
-    # Garante que start_time não é None
     if start_time is None:
         print(f"ERRO: Worker {wid} iniciado antes do start_time ser definido.")
         return
@@ -74,13 +73,26 @@ async def worker(
                         "title": title,
                         "content": content_payload
                     }
-                else: # mongo
-                    username = f"U_{wid}_{t0:.4f}" # Username único simples
+                else:  # mongo
+                    username = f"U_{wid}_{t0:.4f}"  # Username único simples
+
+                    # Gerar data aleatória entre 2022-01-01 e 2025-01-01
+                    start_date = datetime.date(2022, 1, 1)
+                    end_date = datetime.date(2025, 1, 1)
+                    delta_days = (end_date - start_date).days
+                    random_days = random.randint(0, delta_days)
+                    created_at = start_date + datetime.timedelta(days=random_days)
+
                     payload = {
-                        "author": { "user_id": random.randint(1, 1000), "username": username },
+                        "author": {
+                            "user_id": random.randint(1, 1000),
+                            "username": username
+                        },
                         "title": title,
-                        "content": content_payload
+                        "content": content_payload,
+                        "created_at": created_at.isoformat()  # formato YYYY-MM-DD
                     }
+
 
                 async with session.post(f"{url}/posts", json=payload) as resp:
                     await resp.text()
