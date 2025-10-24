@@ -37,10 +37,11 @@ export async function seedDatabase(client, dbType) {
   console.log(`🏗 Índices: ${USE_INDEX ? "ativados" : "desativados"}`);
 
   if (dbType === "postgres") {
+    // Lógica do Postgres (sem alteração)
     await client.query(`
       DROP TABLE IF EXISTS orders;
       CREATE TABLE orders (
-        id SERIAL PRIMARY KEY,
+        id SERIAL, 
         user_id INT NOT NULL,
         status TEXT NOT NULL,
         total_value NUMERIC(10,2) NOT NULL,
@@ -50,15 +51,12 @@ export async function seedDatabase(client, dbType) {
 
     console.log("🌱 Inserindo registros (Postgres orders)...");
     const totalBatches = Math.ceil(DATASET_SIZE / BATCH_SIZE);
-
     for (let b = 0; b < totalBatches; b++) {
       const values = [];
       const params = [];
-
       for (let i = 0; i < BATCH_SIZE; i++) {
         const idx = b * BATCH_SIZE + i;
         if (idx >= DATASET_SIZE) break;
-
         const userId = pickUserId();
         const r = Math.random();
         let status = "PAID";
@@ -66,10 +64,8 @@ export async function seedDatabase(client, dbType) {
         else if (r < 0.65) status = "PAID";
         else if (r < 0.9) status = "SHIPPED";
         else status = "CANCELLED";
-
         const totalValue = randomTotal(5, 2000);
         const createdAt = randomCreatedAt();
-
         params.push(userId, status, totalValue, createdAt);
         values.push(
           `($${params.length - 3}, $${params.length - 2}, $${
@@ -77,23 +73,23 @@ export async function seedDatabase(client, dbType) {
           }, $${params.length})`
         );
       }
-
       await client.query(
         `INSERT INTO orders (user_id, status, total_value, created_at) VALUES ${values.join(
           ","
         )}`,
         params
       );
-
       if ((b + 1) % 10 === 0) {
         console.log(
           `... ${Math.min((b + 1) * BATCH_SIZE, DATASET_SIZE)} inseridos`
         );
       }
     }
-
     if (USE_INDEX) {
       console.log("🧱 Criando índices (Postgres)...");
+      await client.query(
+        `CREATE INDEX IF NOT EXISTS idx_orders_id ON orders(id);`
+      );
       await client.query(
         `CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);`
       );
@@ -107,15 +103,17 @@ export async function seedDatabase(client, dbType) {
         `CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);`
       );
     }
-
     console.log("✅ Seeding Postgres (orders) concluído!");
+
   } else if (dbType === "mongo") {
     const Order = client;
 
     console.log("🧹 Limpando coleção (Mongo orders)...");
-    await Order.deleteMany({});
+    // Nota: deleteMany() apaga docs, mas NÃO apaga os índices.
+    await Order.deleteMany({}); 
 
     console.log("🌱 Inserindo documentos (Mongo orders)...");
+    // A inserção aqui será LENTA se os índices existirem de um run anterior
     const docs = [];
     for (let i = 0; i < DATASET_SIZE; i++) {
       const userId = pickUserId();
@@ -141,6 +139,18 @@ export async function seedDatabase(client, dbType) {
     }
 
     if (docs.length > 0) await Order.insertMany(docs);
+    console.log("   ... documentos inseridos.");
+    console.log("🧹 Dropando índices (Mongo)...");
+    try {
+      await Order.collection.dropIndexes();
+      console.log("   ... índices dropados.");
+    } catch (e) {
+      if (e.code === 26) {
+        console.log("   ... coleção não existia, nada a dropar.");
+      } else {
+        console.error("Erro ao dropar índices:", e);
+      }
+    }
 
     if (USE_INDEX) {
       console.log("🧱 Criando índices (Mongo)...");

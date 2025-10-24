@@ -34,8 +34,8 @@ errors_read = 0
 errors_write = 0
 
 start_time = None
-post_ids = []
-post_ids_lock = asyncio.Lock() # Lock para acesso seguro à lista post_ids
+order_ids = []
+order_ids_lock = asyncio.Lock() # Lock para acesso seguro à lista order_ids
 periodic_reports = []
 
 # --- Reporter Periódico ---
@@ -98,12 +98,12 @@ async def periodic_reporter(monitor):
 # --- Função Principal ---
 async def main():
     """Orquestra o teste de carga."""
-    global start_time, periodic_reports, post_ids
+    global start_time, periodic_reports, order_ids
     global errors_read, errors_write
 
     # Reseta estado global para garantir execução limpa
     periodic_reports = []
-    post_ids = []
+    order_ids = []
     read_latencies.clear()
     write_latencies.clear()
     errors_read = 0
@@ -154,16 +154,16 @@ async def main():
         print(f"Pre-carregando lista de IDs do {DB_TYPE.upper()}...")
         try:
             preheat_timeout = aiohttp.ClientTimeout(total=max(60, DURATION))
-            async with session.get(f"{URL}/posts/all/ids", timeout=preheat_timeout) as resp:
+            async with session.get(f"{URL}/orders/all/ids", timeout=preheat_timeout) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    async with post_ids_lock:
+                    async with order_ids_lock:
                         if DB_TYPE == "postgres":
-                            post_ids = [item['id'] for item in data if 'id' in item]
+                            order_ids = [item['id'] for item in data if 'id' in item]
                         else:
-                            post_ids = [item['_id'] for item in data if '_id' in item]
-                    print(f"Lista de IDs pré carregados com {len(post_ids)} IDs.")
-                    if not post_ids:
+                            order_ids = [item['_id'] for item in data if '_id' in item]
+                    print(f"Lista de IDs pré carregados com {len(order_ids)} IDs.")
+                    if not order_ids:
                          print("AVISO: Lista de IDs veio vazia!")
                 else:
                     print(f"ERRO: Falha ao pré carregar IDs (Status: {resp.status}). O teste de leitura pode falhar.")
@@ -174,7 +174,7 @@ async def main():
             print(f"ERRO CRÍTICO no pré carregamento: {e}. Encerrando.")
             return
 
-        if not post_ids:
+        if not order_ids:
             print("ERRO CRÍTICO: Não foi possível obter IDs para o teste. Encerrando.")
             return
 
@@ -193,7 +193,7 @@ async def main():
             task = asyncio.create_task(worker(
                 session, i, read_boundary,
                 URL, DURATION, DB_TYPE, DATASET_SIZE, start_time,
-                post_ids_lock, post_ids,
+                order_ids_lock, order_ids,
                 read_latencies, write_latencies,
                 lambda: globals().update(errors_read=errors_read + 1),
                 lambda: globals().update(errors_write=errors_write + 1)

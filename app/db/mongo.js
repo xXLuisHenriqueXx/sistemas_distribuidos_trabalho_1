@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
   user_id: { type: Number, required: true },
-  status: { type: String, required: true, index: true },
+  status: { type: String, required: true, index: false },
   total_value: { type: Number, required: true },
-  created_at: { type: Date, default: Date.now, index: true },
+  created_at: { type: Date, default: Date.now, index: false },
 });
 
 const Order = mongoose.model("Order", orderSchema);

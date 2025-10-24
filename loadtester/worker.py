@@ -2,24 +2,24 @@ import asyncio
 import aiohttp
 import random
 import time
-import random
 import datetime
-import time
 
-# Se LOREM_WORDS for usado apenas aqui, mova-o para cá
-LOREM_WORDS = [
-    "lorem", "ipsum", "dolor", "sit", "amet", "consectetur",
-    "adipcing", "elit", "sed", "do", "eiusmod", "tempor",
-    "incididunt", "ut", "labore", "et", "dolore", "magna",
-    "culpa", "qui", "officia", "deserunt", "mollit", "anim",
-    "id", "est", "laborum"
-]
+# --- Constantes para a simulação ---
 
-def generate_lorem_ipsum(max_words=100):
-    """Gera texto Lorem Ipsum com um número aleatório de palavras."""
-    num_words = random.randint(max_words // 2, max_words) # Gera um tamanho mais consistente
-    content = " ".join(random.choices(LOREM_WORDS, k=num_words))
-    return content.capitalize() + "."
+# Status possíveis, baseados no seed.js
+STATUSES = ["PENDING", "PAID", "SHIPPED", "CANCELLED"]
+# Contagem de usuários, baseada no seed.js
+USER_COUNT = 5000
+# Intervalo de datas, baseado no seed.js
+START_TIMESTAMP = int(datetime.datetime(2020, 1, 1).timestamp())
+END_TIMESTAMP = int(datetime.datetime(2025, 1, 1).timestamp())
+
+
+def generate_random_datetime():
+    """Gera um objeto datetime aleatório dentro do intervalo."""
+    rand_ts = random.randint(START_TIMESTAMP, END_TIMESTAMP)
+    return datetime.datetime.fromtimestamp(rand_ts)
+
 
 async def worker(
     session: aiohttp.ClientSession,
@@ -27,11 +27,11 @@ async def worker(
     read_boundary: float,
     url: str,
     duration: int,
-    db_type: str,
+    db_type: str,            # db_type não é mais usado aqui, mas mantido por consistência
     dataset_size: int,
     start_time: float,
-    post_ids_lock: asyncio.Lock,
-    post_ids: list,
+    order_ids_lock: asyncio.Lock,
+    order_ids: list,
     read_latencies: list,
     write_latencies: list,
     increment_read_error,
@@ -46,55 +46,61 @@ async def worker(
     while time.time() - start_time < duration:
         t0 = time.time()
         op_roll = random.random()
+        
         try:
             if op_roll < read_boundary:
-                pid = None
-                async with post_ids_lock:
-                    if post_ids:
-                        pid = random.choice(post_ids)
+                endpoint_url = None
+                
+                read_op_type = random.randint(1, 4)
 
-                if pid:
-                    async with session.get(f"{url}/posts/{pid}") as resp:
-                        await resp.text() # Consome a resposta
-                        resp.raise_for_status() # Verifica erro HTTP
+                # 1. Buscar por ID
+                if read_op_type == 1:
+                    oid = None
+                    async with order_ids_lock:
+                        if order_ids:
+                            oid = random.choice(order_ids)
+                    if oid:
+                        endpoint_url = f"{url}/orders/{oid}"
+
+                # 2. Buscar por User ID
+                elif read_op_type == 2:
+                    rand_user = random.randint(1, USER_COUNT)
+                    endpoint_url = f"{url}/orders/by-user/{rand_user}?limit=20"
+
+                # 3. Buscar por Status
+                elif read_op_type == 3:
+                    rand_status = random.choice(STATUSES)
+                    endpoint_url = f"{url}/orders/by-status/{rand_status}?limit=50"
+
+                # 4. Buscar por Intervalo de Datas
+                else: # read_op_type == 4
+                    date1 = generate_random_datetime()
+                    date2 = generate_random_datetime()
+                    from_date = min(date1, date2).isoformat()
+                    to_date = max(date1, date2).isoformat()
+                    endpoint_url = f"{url}/orders/range?from={from_date}&to={to_date}&limit=100"
+
+                # Executa a requisição GET, se um endpoint válido foi construído
+                if endpoint_url:
+                    async with session.get(endpoint_url) as resp:
+                        await resp.text()
+                        resp.raise_for_status()
                     read_latencies.append(time.time() - t0)
                 else:
-                    await asyncio.sleep(0.05)
+                    await asyncio.sleep(0.01)
                     continue
 
             # --- Escrita ---
             else:
-                content_payload = generate_lorem_ipsum(max_words=50)
-                payload = {}
-                title = f"T_{wid}_{t0:.4f}" # Título único simples
-                if db_type == "postgres":
-                    payload = {
-                        "user_id": random.randint(1, 1000),
-                        "title": title,
-                        "content": content_payload
-                    }
-                else:  # mongo
-                    username = f"U_{wid}_{t0:.4f}"  # Username único simples
+                # Gera um payload de ordem compatível com o server.js (POST /orders)
+                payload = {
+                    "user_id": random.randint(1, USER_COUNT),
+                    "status": random.choice(STATUSES),
+                    "total_value": round(random.uniform(5.0, 2000.0), 2),
+                    "created_at": generate_random_datetime().isoformat()
+                }
 
-                    # Gerar data aleatória entre 2022-01-01 e 2025-01-01
-                    start_date = datetime.date(2022, 1, 1)
-                    end_date = datetime.date(2025, 1, 1)
-                    delta_days = (end_date - start_date).days
-                    random_days = random.randint(0, delta_days)
-                    created_at = start_date + datetime.timedelta(days=random_days)
-
-                    payload = {
-                        "author": {
-                            "user_id": random.randint(1, 1000),
-                            "username": username
-                        },
-                        "title": title,
-                        "content": content_payload,
-                        "created_at": created_at.isoformat()  # formato YYYY-MM-DD
-                    }
-
-
-                async with session.post(f"{url}/posts", json=payload) as resp:
+                async with session.post(f"{url}/orders", json=payload) as resp:
                     await resp.text()
                     if resp.status != 201: 
                         raise aiohttp.ClientResponseError(

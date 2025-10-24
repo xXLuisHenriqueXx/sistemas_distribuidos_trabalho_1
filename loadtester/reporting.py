@@ -111,11 +111,8 @@ def append_results_to_markdown(config, results, summary, periodic_data, filename
                     cpu_avg = report.get('cpu_avg_pct', 0)
                     mem_avg = report.get('mem_avg_mb', 0)
 
-                    # Formata Sec.Read Avg condicionalmente
-                    sec_avg_val = report.get('secondary_avg_ms', 0)
-                    sec_avg = f"{sec_avg_val:.2f}" if config.get('ENABLE_SECONDARY_READS', False) else "N/A"
 
-                    f.write(f"| {time_s} | {new_reqs} | {read_avg:.2f} | {sec_avg} | {write_avg:.2f} | {cpu_avg:.2f} | {mem_avg:.2f} |\n")
+                    f.write(f"| {time_s} | {new_reqs} | {read_avg:.2f} | {write_avg:.2f} | {cpu_avg:.2f} | {mem_avg:.2f} |\n")
 
             f.write("\n---\n\n") # Separador entre testes
 
