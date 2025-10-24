@@ -5,14 +5,12 @@ import {
   createPostgresConnection,
   insertPost as insertPg,
   getPostById as getPgById,
-  getPostsByUserId as getPgByUserId,
   getAllPostIds as getAllPgIds,
 } from "./db/postgres.js";
 import {
   createMongoConnection,
   insertPost as insertMg,
   getPostById as getMgById,
-  getPostsByUserId as getMgByUserId,
   getAllPostIds as getAllMgIds,
 } from "./db/mongo.js";
 
@@ -22,10 +20,9 @@ const app = express();
 app.use(express.json());
 
 let dbClient = null;
-let isServerReady = false; // <-- 1. Flag de prontidão
+let isServerReady = false;
 
 const dbType = process.env.DB_TYPE || "postgres";
-const ENABLE_SECONDARY_READS = process.env.ENABLE_SECONDARY_READS === 'true';
 
 (async () => {
   console.log("⚙️ Starting up...");
@@ -37,7 +34,6 @@ const ENABLE_SECONDARY_READS = process.env.ENABLE_SECONDARY_READS === 'true';
       dbClient = await createMongoConnection();
     }
 
-    // O seeding agora acontece ANTES de marcar como pronto
     await seedDatabase(dbClient, dbType);
 
     console.log("✅ Database seeded.");
@@ -45,7 +41,6 @@ const ENABLE_SECONDARY_READS = process.env.ENABLE_SECONDARY_READS === 'true';
     const port = 3000;
     app.listen(port, () => {
       console.log(`🚀 App running on port ${port}`);
-      // 2. Marca como pronto SÓ DEPOIS do listen
       isServerReady = true;
       console.log("✅ Server marked as ready.");
     });
@@ -55,12 +50,11 @@ const ENABLE_SECONDARY_READS = process.env.ENABLE_SECONDARY_READS === 'true';
   }
 })();
 
-// --- 3. NOVA ROTA DE HEALTHCHECK ---
+
 app.get("/health", (req, res) => {
   if (isServerReady) {
     res.status(200).send("OK");
   } else {
-    // Responde 503 Service Unavailable se o seeding ainda não terminou
     res.status(503).send("Server Not Ready");
   }
 });
@@ -95,27 +89,6 @@ app.get("/posts/:id", async (req, res) => {
     res.status(500).send("Error fetching post");
   }
 });
-
-// Rota condicional (sem alterações)
-if (ENABLE_SECONDARY_READS) {
-  console.log("... Rota de leitura secundária (/users/:uid) ATIVADA.");
-  app.get("/users/:uid/posts", async (req, res) => {
-    try {
-      const { uid } = req.params;
-      const result =
-        dbType === "postgres"
-          ? await getPgByUserId(dbClient, uid) 
-          : await getMgByUserId(dbClient, uid); 
-
-      res.json(result);
-    } catch (err) {
-      console.error(err);
-      res.status(500).send("Error fetching posts by user");
-    }
-  });
-} else {
-  console.log("... Rota de leitura secundária (/users/:uid) DESATIVADA.");
-}
 
 
 // Rota de escrita (sem alterações)

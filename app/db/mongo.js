@@ -44,18 +44,6 @@ export async function getPostById(Post, id) {
   }
 }
 
-// --- FUNÇÃO ADICIONADA ---
-export async function getPostsByUserId(Post, uid) {
-  const numericId = parseInt(uid, 10);
-  if (isNaN(numericId)) return [];
-
-  // Busca pelo campo aninhado "author.user_id"
-  // O índice criado no seed.js vai acelerar isso
-  return await Post.find({ "author.user_id": numericId })
-    .sort({ created_at: -1 })
-    .limit(50); // Mesmo limit do Postgres para uma comparação justa
-}
-
 // --- NOVA FUNÇÃO PARA O LOADTESTER ---
 export async function getAllPostIds(Post) {
   // Busca todos os documentos, retornando apenas o campo _id
