@@ -5,7 +5,7 @@ dotenv.config();
 
 const USE_INDEX = process.env.USE_INDEX === "true";
 const DATASET_SIZE = parseInt(process.env.DATASET_SIZE || "50000", 10);
-const USER_COUNT = parseInt(process.env.USER_COUNT || "5000", 10); // option 2
+const USER_COUNT = parseInt(process.env.USER_COUNT || "5000", 10);
 
 const BATCH_SIZE = 1000;
 const STATUSES = ["PENDING", "PAID", "SHIPPED", "CANCELLED"];
@@ -37,7 +37,6 @@ export async function seedDatabase(client, dbType) {
   console.log(`🏗 Índices: ${USE_INDEX ? "ativados" : "desativados"}`);
 
   if (dbType === "postgres") {
-    // Lógica do Postgres (sem alteração)
     await client.query(`
       DROP TABLE IF EXISTS orders;
       CREATE TABLE orders (
@@ -104,16 +103,15 @@ export async function seedDatabase(client, dbType) {
       );
     }
     console.log("✅ Seeding Postgres (orders) concluído!");
-
   } else if (dbType === "mongo") {
     const Order = client;
 
     console.log("🧹 Limpando coleção (Mongo orders)...");
-    // Nota: deleteMany() apaga docs, mas NÃO apaga os índices.
-    await Order.deleteMany({}); 
+
+    await Order.deleteMany({});
 
     console.log("🌱 Inserindo documentos (Mongo orders)...");
-    // A inserção aqui será LENTA se os índices existirem de um run anterior
+
     const docs = [];
     for (let i = 0; i < DATASET_SIZE; i++) {
       const userId = pickUserId();

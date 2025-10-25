@@ -27,7 +27,7 @@ async def worker(
     read_boundary: float,
     url: str,
     duration: int,
-    db_type: str,            # db_type não é mais usado aqui, mas mantido por consistência
+    db_type: str,
     dataset_size: int,
     start_time: float,
     order_ids_lock: asyncio.Lock,

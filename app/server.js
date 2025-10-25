@@ -2,7 +2,6 @@ import express from "express";
 import dotenv from "dotenv";
 import { seedDatabase } from "./seed.js";
 
-// Importando as novas funções do Postgres com aliases
 import {
   createPostgresConnection,
   insertOrder as insertPgOrder,
@@ -13,7 +12,6 @@ import {
   getAllOrderIds as getPgAllOrderIds,
 } from "./db/postgres.js";
 
-// Importando as novas funções do Mongo com aliases
 import {
   createMongoConnection,
   insertOrder as insertMgOrder,
@@ -44,7 +42,6 @@ const dbType = process.env.DB_TYPE || "postgres";
       dbClient = await createMongoConnection();
     }
 
-    // A função de seed continua a mesma
     await seedDatabase(dbClient, dbType);
 
     console.log("✅ Database seeded.");
@@ -61,7 +58,6 @@ const dbType = process.env.DB_TYPE || "postgres";
   }
 })();
 
-// Endpoint de Health Check (mantido)
 app.get("/health", (_, res) => {
   if (isServerReady) {
     res.status(200).send("OK");
@@ -70,12 +66,6 @@ app.get("/health", (_, res) => {
   }
 });
 
-// --- Endpoints atualizados para "Orders" ---
-
-/**
- * Endpoint para criar uma nova ordem
- * (Substitui POST /posts)
- */
 app.post("/orders", async (req, res) => {
   try {
     const { user_id, status, total_value, created_at } = req.body;
@@ -98,10 +88,6 @@ app.post("/orders", async (req, res) => {
   }
 });
 
-/**
- * Endpoint para buscar todos os IDs de ordens
- * (Substitui GET /posts/all/ids)
- */
 app.get("/orders/all/ids", async (_, res) => {
   try {
     const ids =
@@ -115,10 +101,6 @@ app.get("/orders/all/ids", async (_, res) => {
   }
 });
 
-/**
- * Endpoint para buscar ordens por user_id
- * (Novo endpoint)
- */
 app.get("/orders/by-user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -136,10 +118,6 @@ app.get("/orders/by-user/:userId", async (req, res) => {
   }
 });
 
-/**
- * Endpoint para buscar ordens por status
- * (Novo endpoint)
- */
 app.get("/orders/by-status/:status", async (req, res) => {
   try {
     const { status } = req.params;
@@ -157,11 +135,6 @@ app.get("/orders/by-status/:status", async (req, res) => {
   }
 });
 
-/**
- * Endpoint para buscar ordens por intervalo de datas
- * (Novo endpoint)
- * Ex: /orders/range?from=2023-01-01T00:00:00Z&to=2023-01-31T23:59:59Z
- */
 app.get("/orders/range", async (req, res) => {
   try {
     const { from, to } = req.query;
@@ -184,10 +157,6 @@ app.get("/orders/range", async (req, res) => {
   }
 });
 
-/**
- * Endpoint para buscar uma ordem específica por ID
- * (Substitui GET /posts/:id)
- */
 app.get("/orders/:id", async (req, res) => {
   try {
     const { id } = req.params;
