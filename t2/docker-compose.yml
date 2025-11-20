@@ -1,0 +1,112 @@
+services:
+  mongo1:
+    image: mongo:7
+    container_name: mongo1
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo1_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  mongo2:
+    image: mongo:7
+    container_name: mongo2
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo2_data:/data/db
+    depends_on:
+      - mongo1
+
+  mongo3:
+    image: mongo:7
+    container_name: mongo3
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo3_data:/data/db
+    depends_on:
+      - mongo1
+
+  mongo-setup:
+    image: mongo:7
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_started
+      mongo3:
+        condition: service_started
+    command: >
+      bash -c "echo 'Aguardando mongo1...' && sleep 5 &&
+      mongosh --host mongo1:27017 --eval '
+        try {
+          rs.initiate({
+            _id: \"rs0\",
+            members: [
+              { _id: 0, host: \"mongo1:27017\" },
+              { _id: 1, host: \"mongo2:27017\" },
+              { _id: 2, host: \"mongo3:27017\" }
+            ]
+          });
+          console.log(\"### SUCESSO: Replica Set iniciado! ###\");
+        } catch (e) {
+          if (e.codeName === \"AlreadyInitialized\") {
+            console.log(\"### AVISO: Replica Set já estava iniciado (ignorado) ###\");
+          } else {
+            throw e;
+          }
+        }
+      '"
+
+  app:
+    build: ./app
+    environment:
+      - READ_PREFERENCE=${READ_PREFERENCE}
+      - WRITE_CONCERN=${WRITE_CONCERN}
+      - DATASET_SIZE=${DATASET_SIZE}
+      - COMPLEX_DOC_RATIO=${COMPLEX_DOC_RATIO}
+      - MONGO_HOSTS=mongo1:27017,mongo2:27017,mongo3:27017
+      - CHAOS_FAILURE_CHANCE=${CHAOS_FAILURE_CHANCE}
+      - CHAOS_KILL_LEADER=${CHAOS_KILL_LEADER}
+    depends_on:
+      mongo-setup:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      resources:
+        limits:
+          cpus: ${APP_CPUS:-1}
+          memory: ${APP_MEM:-512M}
+
+  loadtester:
+    build: ./loadtester
+    environment:
+      - TARGET_URL=http://app:3000
+      - DURATION=45
+      - CONCURRENCY=10
+      - READ_RATIO=0.8
+      - READ_PREFERENCE=${READ_PREFERENCE}
+      - WRITE_CONCERN=${WRITE_CONCERN}
+      - CHAOS_FAILURE_CHANCE=${CHAOS_FAILURE_CHANCE}
+      - DATASET_SIZE=${DATASET_SIZE}
+      - COMPLEX_DOC_RATIO=${COMPLEX_DOC_RATIO}
+    depends_on:
+      - app
+    volumes:
+      - ./reports:/app/reports
+
+volumes:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:
