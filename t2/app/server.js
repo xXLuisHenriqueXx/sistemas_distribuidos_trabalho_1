@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { seedDatabase } from "./seed/seed.js";
-import { startChaosMonkey } from "./caos.js"; 
+import { startChaosMonkey } from "./caos.js";
 import {
   createMongoConnection,
   insertOrder,
@@ -20,28 +20,25 @@ app.use(express.json());
 let isServerReady = false;
 
 (async () => {
-  console.log("⚙️ Starting Work 2 App (NoSQL Distributed)...");
+  console.log("Starting  App (NoSQL Distributed)...");
 
   try {
-    // 1. Conecta
     await createMongoConnection();
-    
-    // 2. Popula o banco (O Chaos Monkey DEVE estar desligado aqui)
-    console.log("🌱 Iniciando Seed... (Isso pode demorar)");
+
+    console.log("Iniciando Seed...");
     await seedDatabase("mongo-replicaset");
 
-    // 3. Sobe o servidor
     const port = 3000;
     app.listen(port, () => {
-      console.log(`🚀 App running on port ${port}`);
+      console.log(`App running on port ${port}`);
       isServerReady = true;
-      console.log("✅ Server marked as ready. Accepting connections.");
-      
-      console.log("🐵 Soltando o Chaos Monkey agora que tudo está pronto...");
+      console.log("Server marked as ready. Accepting connections.");
+
+      console.log("Ativando Chaos Monkey...");
       startChaosMonkey();
     });
   } catch (err) {
-    console.error("❌ Startup error:", err);
+    console.error("Startup error:", err);
     process.exit(1);
   }
 })();
@@ -54,8 +51,6 @@ app.get("/health", (_, res) => {
   }
 });
 
-// --- Rotas ---
-
 app.post("/orders", async (req, res) => {
   try {
     const { user_id, status, total_value, created_at, ...extras } = req.body;
@@ -64,13 +59,12 @@ app.post("/orders", async (req, res) => {
       status,
       total_value,
       created_at: created_at || new Date(),
-      metadata: extras 
+      metadata: extras,
     };
 
     const result = await insertOrder(data);
     res.status(201).json({ id: result._id });
   } catch (err) {
-    // Log silencioso para não poluir o terminal durante testes de carga
     if (Math.random() < 0.01) console.error("Erro (amostra):", err.message);
     res.status(500).send("Error inserting order");
   }

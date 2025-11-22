@@ -34,27 +34,27 @@ function generateDynamicMetadata(status) {
   if (isComplex) {
     const itemsCount = Math.floor(Math.random() * 5) + 3;
     const items = [];
-    for(let k=0; k<itemsCount; k++) {
+    for (let k = 0; k < itemsCount; k++) {
       items.push({
         name: faker.commerce.productName(),
         price: parseFloat(faker.commerce.price()),
         sku: faker.string.alphanumeric(12),
-        description: faker.commerce.productDescription()
+        description: faker.commerce.productDescription(),
       });
     }
-    return { 
+    return {
       type: "physical_goods_heavy",
       priority_shipping: Math.random() > 0.5,
-      items, 
+      items,
       shipping_address: {
         street: faker.location.streetAddress(),
         city: faker.location.city(),
         zip: faker.location.zipCode(),
-        country: faker.location.country()
-      }
+        country: faker.location.country(),
+      },
     };
-  } 
-  
+  }
+
   const subtype = Math.random();
 
   if (subtype < 0.5) {
@@ -63,21 +63,23 @@ function generateDynamicMetadata(status) {
       license_key: faker.string.uuid(),
     };
   } else {
-     return {
+    return {
       type: "simple_order",
-      note: "No metadata"
+      note: "No metadata",
     };
   }
 }
 
 export async function seedDatabase(dbType) {
-  console.log(`⚙️ Iniciando Seed (${dbType})...`);
-  console.log(`📦 Dataset: ${DATASET_SIZE.toLocaleString()} docs`);
-  console.log(`⚖️ Complexidade: ${(COMPLEX_DOC_RATIO * 100).toFixed(0)}% dos docs serão pesados`);
-  
+  console.log(`Iniciando Seed (${dbType})...`);
+  console.log(`Dataset: ${DATASET_SIZE.toLocaleString()} docs`);
+  console.log(
+    `Complexidade: ${(COMPLEX_DOC_RATIO * 100).toFixed(0)}% dos docs serão pesados`,
+  );
+
   const docs = [];
   const batchSize = 2000;
-  
+
   for (let i = 0; i < DATASET_SIZE; i++) {
     const userId = pickUserId();
     const r = Math.random();
@@ -92,7 +94,7 @@ export async function seedDatabase(dbType) {
       status,
       total_value: randomTotal(5, 2000),
       created_at: randomCreatedAt(),
-      metadata: generateDynamicMetadata(status)
+      metadata: generateDynamicMetadata(status),
     };
 
     docs.push(baseDoc);
@@ -105,7 +107,7 @@ export async function seedDatabase(dbType) {
   }
 
   if (docs.length > 0) await insertManyOrders(docs);
-  
-  console.log("✅ Inserção concluída.");
-  console.log("🏁 Seed completo!\n");
+
+  console.log("Inserção concluída.");
+  console.log("Seed completo!\n");
 }
