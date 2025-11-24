@@ -44,7 +44,7 @@ def wait_for_server():
         print(".", end="", flush=True)
         time.sleep(1)
 
-    print("\n❌ Timeout: Servidor não subiu a tempo. Abortando.")
+    print("\nTimeout: Servidor não subiu a tempo. Abortando.")
     sys.exit(1)
 
 
@@ -166,8 +166,7 @@ def generate_timeline(start_ts, all_results):
 def run():
     wait_for_server()
 
-    print(f"🚀 Iniciando Load Test por {DURATION}s ({CONCURRENCY} threads)...")
-    print(f"🎯 Target: {TARGET_URL}")
+    print(f"Iniciando Load Test por {DURATION}s ({CONCURRENCY} threads)...")
 
     start_ts = time.time()
 
@@ -214,10 +213,10 @@ Este gráfico reflete a visão do cliente sobre a saúde do sistema.
 """
 
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-    with open(OUTPUT_FILE, "w") as f:
+    with open(OUTPUT_FILE, "a") as f:
         f.write(report_content)
 
-    print(f"📄 Relatório salvo em: {OUTPUT_FILE}")
+    print(f"Relatório salvo em: {OUTPUT_FILE}")
     print(report_content)
 
 
